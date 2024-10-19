@@ -13,9 +13,9 @@ end
 func instr(s, substr)
     len_s = len(s)
     len_substr = len(substr)
-	# Goes through the entire string, and extracts a substring of the lenght of substr parameter
+    # Goes through the entire string, and extracts a substring of the length of substr parameter
     for i = 1 to len_s - len_substr + 1
-	# Compares to see if they are the same
+        # Compares to see if they are the same
         if substr(s, i, len_substr) = substr
             return i
         end
@@ -24,11 +24,11 @@ func instr(s, substr)
 end
 
 # Custom function to find substring position, to use when deriving from right to left
-# Takes a substring and finds it in the string and returns its position starting position
+# Takes a substring and finds it in the string and returns its starting position
 func findAllPositions(s, substr)
     positions = []
-    len_s = len(s) # Finds the lenght of the string
-    len_substr = len(substr) # Finds the lenght of the substring
+    len_s = len(s) # Finds the length of the string
+    len_substr = len(substr) # Finds the length of the substring
     i = 1 # Ring is 1 based
     while i <= len_s - len_substr + 1
         if substr(s, i, len_substr) = substr
@@ -41,7 +41,7 @@ func findAllPositions(s, substr)
     return positions
 end
 
-# Tokenize input based on spaces and semicolo, basically seperates them into words 
+# Tokenize input based on spaces and semicolons, basically separates them into words 
 func tokenize(input)
     input = trim(input)
     tokens = []
@@ -65,7 +65,7 @@ func tokenize(input)
     return tokens
 end
 
-# Should give the rightmost derivation
+# Should give the rightmost derivation with error handling
 func RightmostDerivation(input)
     derivations = []
     error = ""
@@ -75,9 +75,9 @@ func RightmostDerivation(input)
 
     # Check start and end conditions
     if len(tokens) < 2 or tokens[1] != "wake"
-        error = "Error: sentence must start with 'wake'"
+        error = "Error: Sentence must start with 'wake'"
     elseif tokens[len(tokens)] != "sleep"
-        error = "Error: sentence must end with 'sleep'"
+        error = "Error: Sentence must end with 'sleep'"
     else
         # Finds the indexes of 'key'
         keyTokens = []
@@ -86,7 +86,7 @@ func RightmostDerivation(input)
                 add(keyTokens, i)
             end
         next
-	# Used to generate the correct number of <key> <keys>
+        # Used to generate the correct number of <key> <keys>
         keyCount = len(keyTokens)
 
         see "Number of keys: " + keyCount + nl
@@ -140,19 +140,30 @@ func RightmostDerivation(input)
                 elseif nt = "<key>"
                     # Set tokenIndex to position of current 'key' token (reverse order for rightmost derivation)
                     tokenIndex = keyTokens[keyCount - keyProcessed]
-                    # Replace <key> with 'key <letter> = <movement>;'
-                    derivation = substr(derivation, 1, pos_nt - 1) + "key <letter> = <movement>;" + substr(derivation, pos_nt + len(nt))
-                    add(derivations, derivation)
-                    keyProcessed += 1  # Increment keyProcessed here
+                    # Check if key definition has enough tokens to proceed
+                    if tokenIndex + 4 <= len(tokens)
+                        # Replace <key> with 'key <letter> = <movement>;'
+                        derivation = substr(derivation, 1, pos_nt - 1) + "key <letter> = <movement>;" + substr(derivation, pos_nt + len(nt))
+                        add(derivations, derivation)
+                        keyProcessed += 1
+                    else
+                        error = "Error: Incomplete key definition starting at token position " + tokenIndex
+                        break
+                    end
                 elseif nt = "<letter>"
                     # Check bounds before accessing tokens
                     if tokenIndex + 1 <= len(tokens)
                         # Replace <letter> with corresponding letter from tokens
                         letterToken = tokens[tokenIndex + 1]  # tokens after 'key'
-                        derivation = substr(derivation, 1, pos_nt - 1) + letterToken + substr(derivation, pos_nt + len(nt))
-                        add(derivations, derivation)
+                        if instr("a b c d", letterToken) > 0
+                            derivation = substr(derivation, 1, pos_nt - 1) + letterToken + substr(derivation, pos_nt + len(nt))
+                            add(derivations, derivation)
+                        else
+                            error = "Error: Invalid letter '" + letterToken + "' at token position " + (tokenIndex + 1)
+                            break
+                        end
                     else
-                        error = "Error: Not enough tokens to process <letter> for key at position " + tokenIndex
+                        error = "Error: Expected letter after 'key' at token position " + (tokenIndex + 1)
                         break
                     end
                 elseif nt = "<movement>"
@@ -160,14 +171,21 @@ func RightmostDerivation(input)
                     if tokenIndex + 3 <= len(tokens)
                         # Replace <movement> with corresponding movement from tokens
                         movementToken = tokens[tokenIndex + 3]  # tokens after '='
-                        derivation = substr(derivation, 1, pos_nt - 1) + movementToken + substr(derivation, pos_nt + len(nt))
-                        add(derivations, derivation)
+                        if instr("DRIVE BACK LEFT RIGHT SPINL SPINR", movementToken) > 0
+                            derivation = substr(derivation, 1, pos_nt - 1) + movementToken + substr(derivation, pos_nt + len(nt))
+                            add(derivations, derivation)
+                        else
+                            error = "Error: Invalid movement '" + movementToken + "' at token position " + (tokenIndex + 3)
+                            break
+                        end
                     else
-                        error = "Error: Not enough tokens to process <movement> for key at position " + tokenIndex
+                        error = "Error: Expected movement after '=' at token position " + (tokenIndex + 3)
                         break
                     end
                 end
             end
+        elseif keyCount = 0
+            error = "Error: No 'key' definitions found in the sentence."
         end
     end
 
@@ -202,6 +220,7 @@ func main ()
 
     if error != ""
         see nl + error + nl
+    else
+        see "The sentence is syntactically correct according to the grammar." + nl
     end
 end
-
