@@ -220,7 +220,5 @@ func main ()
 
     if error != ""
         see nl + error + nl
-    else
-        see "The sentence is syntactically correct according to the grammar." + nl
     end
 end
