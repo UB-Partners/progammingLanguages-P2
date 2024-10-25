@@ -266,9 +266,9 @@ func writeToFile(tokens)
                     routine = "SpinRight"
             off
             
-            # Generate IF statement matching exact format
-            code += "IF KEY = \" + upper(letter) + "\ OR KEY = \" + lower(letter) 
-            code += "\' THEN GOSUB " + routine + nl
+            # Generate IF statement 
+            code += "IF KEY =  '"+ upper(letter) +"' OR KEY = '"+ lower(letter)
+            code += "' THEN GOSUB " + routine + nl
         ok
         currentKeyIndex += 5
     end
