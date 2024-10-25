@@ -235,58 +235,64 @@ func writeToFile(tokens)
     # Open file for writing
     fp = fopen("iZEBot.bas", "w")
     
-    # PBASIC header 
-    code = "' {$STAMP BS2}" + nl
-    code += "' {$PBASIC 2.5}" + nl
-    
-    # Main program 
+    # Write exact format with no extra newlines or spacing
+    code = "'{$STAMP BS2p}" + nl
+    code += "'{$PBASIC 2.5}" + nl
+    code += "KEY VAR Byte" + nl
+    code += "Main:" + nl
     code += "DO" + nl
+    code += "SERIN 3,2063,250,Timeout,[KEY]" + nl
     
-    # Process each token for key assignments
+    # Generate IF statements for each key assignment
     currentKeyIndex = 2  # Start after 'wake'
     while currentKeyIndex < len(tokens) - 1  # Stop before 'sleep'
         if tokens[currentKeyIndex][:value] = "key"
             letter = tokens[currentKeyIndex + 1][:value]
             movement = tokens[currentKeyIndex + 3][:value]
             
-            # Convert letter to input pin number (a=1, b=2, etc.)
-            inputPin = ascii(letter) - ascii("a") + 1
-            
-            # Start the IF condition for this key
-            code += "  IF IN" + inputPin + " = 1 THEN  ' Key " + upper(letter) + " - " + movement + nl
-            
-            # Add the appropriate motor control based on movement type
+            # Convert movement names to subroutine names
             switch movement
                 on "DRIVE"
-                    code += "    HIGH 12" + nl + "    HIGH 13" + nl + "    PAUSE 50" + nl
+                    routine = "Forward"
                 on "BACK"
-                    code += "    LOW 12" + nl + "    LOW 13" + nl + "    PAUSE 50" + nl
+                    routine = "Backward"
                 on "LEFT"
-                    code += "    HIGH 12" + nl + "    LOW 13" + nl + "    PAUSE 50" + nl
+                    routine = "TurnLeft"
                 on "RIGHT"
-                    code += "    LOW 12" + nl + "    HIGH 13" + nl + "    PAUSE 50" + nl
+                    routine = "TurnRight"
                 on "SPINL"
-                    code += "    HIGH 12" + nl + "    LOW 13" + nl
-                    code += "    PAUSE 100" + nl
-                    code += "    LOW 12" + nl + "    HIGH 13" + nl
-                    code += "    PAUSE 100" + nl
+                    routine = "SpinLeft"
                 on "SPINR"
-                    code += "    LOW 12" + nl + "    HIGH 13" + nl
-                    code += "    PAUSE 100" + nl
-                    code += "    HIGH 12" + nl + "    LOW 13" + nl
-                    code += "    PAUSE 100" + nl
+                    routine = "SpinRight"
             off
             
-            code += "  ENDIF" + nl + nl
+            # Generate IF statement matching exact format
+            code += "IF KEY = \" + upper(letter) + "\ OR KEY = \" + lower(letter) 
+            code += "\' THEN GOSUB " + routine + nl
         ok
-        currentKeyIndex += 5  # Move to next key section
+        currentKeyIndex += 5
     end
     
-    # Reset motors after each action
-    code += "  LOW 12" + nl + "  LOW 13" + nl
-
-    code += "LOOP ' Return to start of loop to check for button presses" + nl
-    code += nl + "'Program will continue running until robot is powered off" + nl
+    code += "LOOP" + nl
+    code += "Timeout:" + nl
+    code += "GOSUB Motor_OFF" + nl
+    code += "GOTO Main" + nl
+    code += "'+++++ Movement Procedure +++++++++++++++++++++++++++++" + nl
+    code += "Forward:" + nl
+    code += "HIGH 13 : LOW 12 : HIGH 15 : LOW 14 : RETURN" + nl
+    code += "Backward:" + nl
+    code += "HIGH 12 : LOW 13 : HIGH 14 : LOW 15 : RETURN" + nl
+    code += "TurnLeft:" + nl
+    code += "HIGH 13 : LOW 12 : LOW 15 : LOW 14 : RETURN" + nl
+    code += "TurnRight:" + nl
+    code += "LOW 13 : LOW 12 : HIGH 15 : LOW 14 : RETURN" + nl
+    code += "SpinLeft:" + nl
+    code += "HIGH 13 : LOW 12 : HIGH 14 : LOW 15 : RETURN" + nl
+    code += "SpinRight:" + nl
+    code += "HIGH 12 : LOW 13 : HIGH 15 : LOW 14 : RETURN" + nl
+    code += "Motor_OFF:" + nl
+    code += "LOW 13 : LOW 12 : LOW 15 : LOW 14 : RETURN" + nl
+    code += "'++++++++++++++++++++++++++++++++++++++++++++++++++++++++" + nl
 
     # Write the content to file
     fwrite(fp, code)
