@@ -209,24 +209,43 @@ func printParseTree(tokens)
         ok
         i++
     end
-    
-    # Print the parse tree based on number of keys
-    see "                   <program>" + nl
-    see "                       |" + nl
-    see "                wake <keys> sleep" + nl
-    see "                       |" + nl
+ 
     
     if keyCount = 1
-        see "                     <key>" + nl
-        see "                       |" + nl
-        see "            key <key>  =  <action>" + nl
-        see "                 /            \" + nl
-        see "                " + keyParts[1] + "            " + actionParts[1] + nl
-    
-                                      
-# NEED TO ADD MORE PARSE TREE THINGS HERE!!!!!!!!!!!!
-
+        see "                    <program>" + nl
+        see "                        |" + nl
+        see "                 wake <keys> sleep" + nl
+        see "                        |" + nl
+        see "                      <key>"   + nl                
+	see "                   _____|____"  + nl                  
+        see "                  /          \" + nl                   
+        see "           key <key>  =  <movement> ;" + nl          
+        see "                 |            |" + nl        
+        see "                 " + keyParts[1] + "           " + actionParts[1] + nl
     ok
+    if keyCount = 2
+        see "                         <program>" + nl
+        see "                             |" + nl
+        see "                     wake <keys> sleep" + nl
+	see "                 ____________|____________" +nl
+        see "                /                         \" + nl
+        see "             <key>                      <keys>" + nl
+	see "           ____|_____                      |" +nl
+        see "          /          \                     |" + nl
+        see "   key <key>  =  <movement> ;              | " + nl
+        see "         |            |                    |" + nl
+        see "         " + keyParts[1] + "       <movement>                |" + nl                               
+        see "                      |                    |" + nl
+        see "                    "+ actionParts[1] +"                <key>" + nl
+	see "                                       ____|_____" +nl
+        see "                                      /          \" + nl
+        see "                               key <key>  =  <movement> ;" + nl
+	see "                                     |            |" + nl
+        see "                                     "+ keyParts[2] + "        <movement>" + nl
+	see "                                                  |" + nl
+	see "                                                 "+ actionParts[2] + nl 
+    ok
+
     see nl + "Parse Tree Printed successfully" + nl
     writeToFile(tokens)  # Pass tokens to writeToFile
 end
@@ -266,7 +285,7 @@ func writeToFile(tokens)
                     routine = "SpinRight"
             off
             
-            # Generate IF statement 
+            # Generate IF statement matching exact format
             code += "IF KEY =  '"+ upper(letter) +"' OR KEY = '"+ lower(letter)
             code += "' THEN GOSUB " + routine + nl
         ok
