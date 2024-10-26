@@ -35,7 +35,23 @@ Func getTokenType(word)
     elseif word = "DRIVE" or word = "BACK" or word = "LEFT" or word = "RIGHT" or word = "SPINL" or word = "SPINR"
         return "movement"
     else
-        return "unknown"
+        # Check if it might be an invalid letter or movement
+        validLetters = ["a", "b", "c", "d"]
+        validMovements = ["DRIVE", "BACK", "LEFT", "RIGHT", "SPINL", "SPINR"]
+        
+        if len(word) = 1 and isalpha(word)  # Looks like it was meant to be a letter
+            if find(validLetters, lower(word)) = 0
+                return "invalid_letter"
+            ok
+        ok
+        
+        if upper(word) = word  # All caps - might be meant as a movement
+            if find(validMovements, word) = 0
+                return "invalid_movement"
+            ok
+        ok
+        
+        return "unknown"  # Completely unknown type
     ok
 
 # Performs the leftmost derivation.
@@ -43,23 +59,29 @@ Func leftmostDerivation(tokens)
     derivation = ["<program>"]
     errors = []
 
-    # Checks for wake and sleep
-    if tokens[1][:value] != "wake"
+    # Check first and last tokens
+    if tokens[1][:type] = "unknown"
+        add(errors, "Invalid word '" + tokens[1][:value] + "' at position 1. Expected 'wake'")
+        return [derivation, errors]
+    elseif tokens[1][:value] != "wake"
         add(errors, "Sentence must start with 'wake'")
         return [derivation, errors]
     ok
 
-    if tokens[len(tokens)][:value] != "sleep"
+    if tokens[len(tokens)][:type] = "unknown"
+        add(errors, "Invalid word '" + tokens[len(tokens)][:value] + "' at position " + len(tokens) + ". Expected 'sleep'")
+        return [derivation, errors]
+    elseif tokens[len(tokens)][:value] != "sleep"
         add(errors, "Sentence must end with 'sleep'")
         return [derivation, errors]
     ok
 
     if len(tokens) <= 2
-        add(errors, "Sentence must have keys between 'wake' and 'sleep'")
+        add(errors, "Sentence must have at least 1 key between 'wake' and 'sleep'")
         return [derivation, errors]
     ok
 
-    # Count keys to help with derivation steps.
+    # Count keys to help with derivation steps
     keyCount = 0
     for i = 2 to len(tokens) - 1
         if tokens[i][:value] = "key"
@@ -72,66 +94,92 @@ Func leftmostDerivation(tokens)
         return [derivation, errors]
     ok
 
-    # Start the derivation, step is the same for all derivations.
+    # Start the derivation
     add(derivation, "-> wake <keys> sleep")
     
-    # Make it unique for 1 key sentence vs two key sentence
     if keyCount = 1
         add(derivation, "-> wake <key> sleep")
     else
         add(derivation, "-> wake <key> <keys> sleep")
     ok
 
-    currentKeyIndex = 2  # Starts the derivation after 'wake'
+    currentKeyIndex = 2  # Start after 'wake'
     processedKeys = 0
 
-    while currentKeyIndex < len(tokens) - 1  # Stops before 'sleep'
+    while currentKeyIndex < len(tokens) - 1  # Stop before 'sleep'
         if tokens[currentKeyIndex][:value] = "key"
-            # Checks that the key follows the structure of the grammar key letter = movement ;.
-            if currentKeyIndex + 1 >= len(tokens) or tokens[currentKeyIndex + 1][:type] != "letter"
-                add(errors, "Invalid letter at position " + (currentKeyIndex + 1))
+            # Check letter
+            if currentKeyIndex + 1 >= len(tokens)
+                add(errors, "Missing letter after 'key' at position " + (currentKeyIndex + 1))
+                return [derivation, errors]
+            ok
+            
+            letterToken = tokens[currentKeyIndex + 1]
+            if letterToken[:type] = "invalid_letter"
+                add(errors, "Invalid letter '" + letterToken[:value] + "' at position " + (currentKeyIndex + 1) + ". Valid letters are: a, b, c, d")
+                return [derivation, errors]
+            elseif letterToken[:type] != "letter"
+                add(errors, "Invalid word '" + letterToken[:value] + "' at position " + (currentKeyIndex + 1) + ". Expected a letter (a, b, c, or d)")
                 return [derivation, errors]
             ok
 
-            if currentKeyIndex + 2 >= len(tokens) or tokens[currentKeyIndex + 2][:value] != "="
+            # Check equals sign
+            if currentKeyIndex + 2 >= len(tokens)
                 add(errors, "Missing '=' sign at position " + (currentKeyIndex + 2))
                 return [derivation, errors]
             ok
-
-            if currentKeyIndex + 3 >= len(tokens) or tokens[currentKeyIndex + 3][:type] != "movement"
-                add(errors, "Invalid movement at position " + (currentKeyIndex + 3))
+            
+            if tokens[currentKeyIndex + 2][:value] != "="
+                add(errors, "Invalid word '" + tokens[currentKeyIndex + 2][:value] + "' at position " + (currentKeyIndex + 2) + ". Expected '='")
                 return [derivation, errors]
             ok
 
-            if currentKeyIndex + 4 >= len(tokens) or tokens[currentKeyIndex + 4][:value] != ";"
+            # Check movement
+            if currentKeyIndex + 3 >= len(tokens)
+                add(errors, "Missing movement at position " + (currentKeyIndex + 3))
+                return [derivation, errors]
+            ok
+            
+            movementToken = tokens[currentKeyIndex + 3]
+            if movementToken[:type] = "invalid_movement"
+                add(errors, "Invalid movement '" + movementToken[:value] + "' at position " + (currentKeyIndex + 3) + ". Valid movements are: DRIVE, BACK, LEFT, RIGHT, SPINL, SPINR")
+                return [derivation, errors]
+            elseif movementToken[:type] != "movement"
+                add(errors, "Invalid word '" + movementToken[:value] + "' at position " + (currentKeyIndex + 3) + ". Expected a movement (DRIVE, BACK, LEFT, RIGHT, SPINL, SPINR)")
+                return [derivation, errors]
+            ok
+
+            # Check semicolon
+            if currentKeyIndex + 4 >= len(tokens)
                 add(errors, "Missing ';' after movement at position " + (currentKeyIndex + 4))
                 return [derivation, errors]
             ok
+            
+            if tokens[currentKeyIndex + 4][:value] != ";"
+                add(errors, "Invalid word '" + tokens[currentKeyIndex + 4][:value] + "' at position " + (currentKeyIndex + 4) + ". Expected ';'")
+                return [derivation, errors]
+            ok
 
+            # Rest of the derivation steps remain the same...
             processedKeys++
             currentStep = derivation[len(derivation)]
             
-            # Handle key expansion based on position
             if keyCount = 1
-                # Single key expansion for single key sentences
                 add(derivation, "-> wake key <letter> = <movement>; sleep")
                 add(derivation, "-> wake key " + tokens[currentKeyIndex + 1][:value] + " = <movement>; sleep")
                 add(derivation, "-> wake key " + tokens[currentKeyIndex + 1][:value] + " = " + tokens[currentKeyIndex + 3][:value] + "; sleep")
             else
                 if processedKeys = 1
-                    # First key expansion for multiple key sentences
                     add(derivation, "-> wake key <letter> = <movement>; <keys> sleep")
                     add(derivation, "-> wake key " + tokens[currentKeyIndex + 1][:value] + " = <movement>; <keys> sleep")
                     add(derivation, "-> wake key " + tokens[currentKeyIndex + 1][:value] + " = " + tokens[currentKeyIndex + 3][:value] + "; <keys> sleep")
                 else
                     if processedKeys < keyCount
-                        # Middle keys
                         add(derivation, replaceLeftmost(currentStep, "<keys>", "<key> <keys>"))
                         add(derivation, replaceLeftmost(derivation[len(derivation)], "<key>", "key <letter> = <movement>;"))
                         add(derivation, replaceLeftmost(derivation[len(derivation)], "<letter>", tokens[currentKeyIndex + 1][:value]))
                         add(derivation, replaceLeftmost(derivation[len(derivation)], "<movement>", tokens[currentKeyIndex + 3][:value]))
                     else
-                        # Last key
                         add(derivation, replaceLeftmost(currentStep, "<keys>", "<key>"))
                         add(derivation, replaceLeftmost(derivation[len(derivation)], "<key>", "key <letter> = <movement>;"))
                         add(derivation, replaceLeftmost(derivation[len(derivation)], "<letter>", tokens[currentKeyIndex + 1][:value]))
@@ -142,7 +190,7 @@ Func leftmostDerivation(tokens)
             
             currentKeyIndex += 5
         else
-            add(errors, "Expected 'key' keyword at position " + currentKeyIndex)
+            add(errors, "Expected 'key' keyword at position " + currentKeyIndex + ", got '" + tokens[currentKeyIndex][:value] + "' instead")
             return [derivation, errors]
         ok
     end
