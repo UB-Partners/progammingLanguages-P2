@@ -1,6 +1,6 @@
 load 'stdlib.ring'
 
-func PrintGrammar()
+func PrintGrammar() # Prints the grammar
     see "<program> -> 'wake' <keys> 'sleep' " + nl
     see "<keys> -> <key> | <key> <keys>" + nl
     see "<key> -> 'key' <letter> '=' <movement>; " + nl
@@ -8,7 +8,7 @@ func PrintGrammar()
     see "<movement> -> 'DRIVE' | 'BACK' | 'LEFT' | 'RIGHT' | 'SPINL' | 'SPINR' " + nl + nl
 end
 
-# Tokenizer function remains the same
+# Splits the sentence into tokens; returns it in a map function by value, position, and type
 Func tokenize(input)
     tokens = []
     position = 1
@@ -26,7 +26,7 @@ Func tokenize(input)
     next
     return tokens
 
-# Helper function remains the same
+# Checks to see which token type it is
 Func getTokenType(word)
     if word = "wake" or word = "sleep" or word = "key" or word = "=" or word = ";"
         return word
@@ -38,10 +38,12 @@ Func getTokenType(word)
         return "unknown"
     ok
 
+# Performs the leftmost derivation.
 Func leftmostDerivation(tokens)
     derivation = ["<program>"]
     errors = []
 
+    # Checks for wake and sleep
     if tokens[1][:value] != "wake"
         add(errors, "Sentence must start with 'wake'")
         return [derivation, errors]
@@ -57,8 +59,7 @@ Func leftmostDerivation(tokens)
         return [derivation, errors]
     ok
 
-    add(derivation, "-> wake <keys> sleep")
-
+    # Count keys to help with derivation steps.
     keyCount = 0
     for i = 2 to len(tokens) - 1
         if tokens[i][:value] = "key"
@@ -71,68 +72,85 @@ Func leftmostDerivation(tokens)
         return [derivation, errors]
     ok
 
-    # First expand all <keys> from left to right
-    for i = 1 to keyCount - 1
-        add(derivation, replaceLeftmost(derivation[len(derivation)], "<keys>", "<key> <keys>"))
-    next
-    add(derivation, replaceLeftmost(derivation[len(derivation)], "<keys>", "<key>"))
+    # Start the derivation, step is the same for all derivations.
+    add(derivation, "-> wake <keys> sleep")
+    
+    # Make it unique for 1 key sentence vs two key sentence
+    if keyCount = 1
+        add(derivation, "-> wake <key> sleep")
+    else
+        add(derivation, "-> wake <key> <keys> sleep")
+    ok
 
-    # Then expand each <key> from left to right
-    currentKeyIndex = 2  # Start after 'wake'
-    for i = 1 to keyCount
-        currentStep = derivation[len(derivation)]
-        
-        if currentKeyIndex >= len(tokens) or tokens[currentKeyIndex][:value] != "key"
-            add(errors, "Missing 'key' keyword at position " + currentKeyIndex)
+    currentKeyIndex = 2  # Starts the derivation after 'wake'
+    processedKeys = 0
+
+    while currentKeyIndex < len(tokens) - 1  # Stops before 'sleep'
+        if tokens[currentKeyIndex][:value] = "key"
+            # Checks that the key follows the structure of the grammar key letter = movement ;.
+            if currentKeyIndex + 1 >= len(tokens) or tokens[currentKeyIndex + 1][:type] != "letter"
+                add(errors, "Invalid letter at position " + (currentKeyIndex + 1))
+                return [derivation, errors]
+            ok
+
+            if currentKeyIndex + 2 >= len(tokens) or tokens[currentKeyIndex + 2][:value] != "="
+                add(errors, "Missing '=' sign at position " + (currentKeyIndex + 2))
+                return [derivation, errors]
+            ok
+
+            if currentKeyIndex + 3 >= len(tokens) or tokens[currentKeyIndex + 3][:type] != "movement"
+                add(errors, "Invalid movement at position " + (currentKeyIndex + 3))
+                return [derivation, errors]
+            ok
+
+            if currentKeyIndex + 4 >= len(tokens) or tokens[currentKeyIndex + 4][:value] != ";"
+                add(errors, "Missing ';' after movement at position " + (currentKeyIndex + 4))
+                return [derivation, errors]
+            ok
+
+            processedKeys++
+            currentStep = derivation[len(derivation)]
+            
+            # Handle key expansion based on position
+            if keyCount = 1
+                # Single key expansion for single key sentences
+                add(derivation, "-> wake key <letter> = <movement>; sleep")
+                add(derivation, "-> wake key " + tokens[currentKeyIndex + 1][:value] + " = <movement>; sleep")
+                add(derivation, "-> wake key " + tokens[currentKeyIndex + 1][:value] + " = " + tokens[currentKeyIndex + 3][:value] + "; sleep")
+            else
+                if processedKeys = 1
+                    # First key expansion for multiple key sentences
+                    add(derivation, "-> wake key <letter> = <movement>; <keys> sleep")
+                    add(derivation, "-> wake key " + tokens[currentKeyIndex + 1][:value] + " = <movement>; <keys> sleep")
+                    add(derivation, "-> wake key " + tokens[currentKeyIndex + 1][:value] + " = " + tokens[currentKeyIndex + 3][:value] + "; <keys> sleep")
+                else
+                    if processedKeys < keyCount
+                        # Middle keys
+                        add(derivation, replaceLeftmost(currentStep, "<keys>", "<key> <keys>"))
+                        add(derivation, replaceLeftmost(derivation[len(derivation)], "<key>", "key <letter> = <movement>;"))
+                        add(derivation, replaceLeftmost(derivation[len(derivation)], "<letter>", tokens[currentKeyIndex + 1][:value]))
+                        add(derivation, replaceLeftmost(derivation[len(derivation)], "<movement>", tokens[currentKeyIndex + 3][:value]))
+                    else
+                        # Last key
+                        add(derivation, replaceLeftmost(currentStep, "<keys>", "<key>"))
+                        add(derivation, replaceLeftmost(derivation[len(derivation)], "<key>", "key <letter> = <movement>;"))
+                        add(derivation, replaceLeftmost(derivation[len(derivation)], "<letter>", tokens[currentKeyIndex + 1][:value]))
+                        add(derivation, replaceLeftmost(derivation[len(derivation)], "<movement>", tokens[currentKeyIndex + 3][:value]))
+                    ok
+                ok
+            ok
+            
+            currentKeyIndex += 5
+        else
+            add(errors, "Expected 'key' keyword at position " + currentKeyIndex)
             return [derivation, errors]
         ok
-
-        if currentKeyIndex + 1 >= len(tokens) or tokens[currentKeyIndex + 1][:type] != "letter"
-            add(errors, "Invalid letter '" + tokens[currentKeyIndex + 1][:value] + "' at position " + (currentKeyIndex + 1))
-            return [derivation, errors]
-        ok
-
-        if currentKeyIndex + 2 >= len(tokens) or tokens[currentKeyIndex + 2][:value] != "="
-            add(errors, "Missing '=' sign at position " + (currentKeyIndex + 2))
-            return [derivation, errors]
-        ok
-
-        if currentKeyIndex + 3 >= len(tokens) or tokens[currentKeyIndex + 3][:type] != "movement"
-            add(errors, "Invalid movement '" + tokens[currentKeyIndex + 3][:value] + "' at position " + (currentKeyIndex + 3))
-            return [derivation, errors]
-        ok
-
-        if currentKeyIndex + 4 >= len(tokens) or tokens[currentKeyIndex + 4][:value] != ";"
-            add(errors, "Missing ';' after " + tokens[currentKeyIndex + 3][:value] + " at position " + (currentKeyIndex + 4))
-            return [derivation, errors]
-        ok
-
-        # Check if the next token after semicolon is a letter without a 'key' keyword
-        if currentKeyIndex + 5 < len(tokens) - 1 and  # Ensure we're not at 'sleep'
-           tokens[currentKeyIndex + 5][:type] = "letter"
-            add(errors, "Missing 'key' keyword after ';' at position " + (currentKeyIndex + 4))
-	    return [derivation, errors]
-        ok
-
-        # Expand <key> in leftmost order
-        newStep = replaceLeftmost(currentStep, "<key>", "key <letter> = <movement>;")
-        add(derivation, newStep)
-        
-        # Expand <letter> immediately after
-        newStep = replaceLeftmost(newStep, "<letter>", tokens[currentKeyIndex + 1][:value])
-        add(derivation, newStep)
-        
-        # Finally expand <movement>
-        newStep = replaceLeftmost(newStep, "<movement>", tokens[currentKeyIndex + 3][:value])
-        add(derivation, newStep)
-
-        currentKeyIndex += 5  # Move to next key section
-    next
+    end
 
     return [derivation, errors]
 end
 
-# Helper function to find the position of the leftmost occurrence of a substring
+# Finds a substring in the sentence
 Func leftStrPos(str, subStr)
     lenStr = len(str)
     lenSubStr = len(subStr)
@@ -143,7 +161,7 @@ Func leftStrPos(str, subStr)
     next
     return 0
 
-# Helper function to replace the leftmost occurrence of a substring
+# Replace the leftmost occurrence of a substring
 Func replaceLeftmost(str, oldSubStr, newSubStr)
     pos = leftStrPos(str, oldSubStr)
     if pos = 0
@@ -151,7 +169,7 @@ Func replaceLeftmost(str, oldSubStr, newSubStr)
     ok
     return left(str, pos - 1) + newSubStr + substr(str, pos + len(oldSubStr))
 
-# Add this function to check for duplicate keys
+# Checks for duplicate keys or re-declaration
 func checkDuplicateKeys(tokens)
     keys = []
     errors = []
@@ -167,19 +185,19 @@ func checkDuplicateKeys(tokens)
     return errors
 end
 
-# Modified print parse tree function
+# Parse tree the sentence
 func printParseTree(tokens)
     see nl + "-----------------------------------------------------------" + nl
     see "PARSE TREE: " + nl + nl
     
-    # First check for duplicate keys
+    # Check if a key was declared twice
     duplicateErrors = checkDuplicateKeys(tokens)
     if len(duplicateErrors) > 0
         for error in duplicateErrors
             see error + nl
         next
         see nl + "Would you like to continue viewing the parse tree? (Y/N): " give choice
-        if choice != "y"
+        if choice != "Y"
             return
         ok
     ok
@@ -192,25 +210,33 @@ func printParseTree(tokens)
         ok
     next
     
-    # Check if number of keys exceeds limit
+    # Check if number of keys goes over 4
     if keyCount > 4
-        see "Error: More than 4 keys detected. Only a, b, c, and d are allowed." + nl
-        return
+        see "Error: More than 4 keys detected. Only single declarations of a, b, c, and d are allowed." + nl
+	see nl + "Press any key to restart or type 'END'/'end' to terminate: " give userInput
+            if userInput = "END" or userInput = "end"
+                see "Program terminated." + nl
+                return
+            else
+	 	see nl + "-----------------------------------------------------------" + nl
+                see nl + "Restarting..." + nl
+                main()
+            ok
     ok
     
     # Get the key and action parts for each key statement
     keyParts = []
     actionParts = []
     i = 2  # Start after 'wake'
-    while i < len(tokens) - 1  # Stop before 'sleep'
+    while i < len(tokens) - 1  # Stops before 'sleep'
         if tokens[i][:value] = "key"
-            add(keyParts, tokens[i+1][:value])  # Letter after 'key'
-            add(actionParts, tokens[i+3][:value])  # Action after '='
+            add(keyParts, tokens[i+1][:value])  # Letter after 'key' based on indexing of the map
+            add(actionParts, tokens[i+3][:value])  # Action after '=' based on idexing of the map
         ok
         i++
     end
  
-    
+    # Hardcoded TREE cause why not
     if keyCount = 1
         see "                    <program>" + nl
         see "                        |" + nl
@@ -221,7 +247,8 @@ func printParseTree(tokens)
         see "                  /          \" + nl                   
         see "           key <key>  =  <movement> ;" + nl          
         see "                 |            |" + nl        
-        see "                 " + keyParts[1] + "           " + actionParts[1] + nl
+        see "                 " + keyParts[1] + "            |" + nl          
+ 	see "                            "+ actionParts[1] + nl
     ok
     if keyCount = 2
         see "                         <program>" + nl
@@ -234,27 +261,110 @@ func printParseTree(tokens)
         see "          /          \                     |" + nl
         see "   key <key>  =  <movement> ;              | " + nl
         see "         |            |                    |" + nl
-        see "         " + keyParts[1] + "       <movement>                |" + nl                               
-        see "                      |                    |" + nl
-        see "                    "+ actionParts[1] +"                <key>" + nl
+        see "         " + keyParts[1] + "            |                    |" + nl                               
+        see "                    "+ actionParts[1] +"                  |" + nl
+        see "                                         <key>" + nl
 	see "                                       ____|_____" +nl
         see "                                      /          \" + nl
         see "                               key <key>  =  <movement> ;" + nl
 	see "                                     |            |" + nl
-        see "                                     "+ keyParts[2] + "        <movement>" + nl
-	see "                                                  |" + nl
+        see "                                     "+ keyParts[2] + "            |" + nl
 	see "                                                 "+ actionParts[2] + nl 
     ok
-
-    see nl + "Parse Tree Printed successfully" + nl
-    writeToFile(tokens)  # Pass tokens to writeToFile
+    if keyCount = 3
+        see "                         <program>" + nl
+        see "                             |" + nl
+        see "                     wake <keys> sleep" + nl
+	see "                 ____________|____________" +nl
+        see "                /                         \" + nl
+        see "             <key>                      <keys>" + nl
+	see "           ____|_____                      |" +nl
+        see "          /          \                     |" + nl
+        see "   key <key>  =  <movement> ;              | " + nl
+        see "         |            |                    |" + nl
+        see "         " + keyParts[1] + "            |                    |" + nl                               
+        see "                    "+ actionParts[1] +"      ____________|____________" + nl
+        see "                              /                         \" + nl
+        see "                           <key>                      <keys>" + nl
+	see "                         ____|_____                      |"+nl
+        see "                        /          \                     |" + nl
+        see "                  key <key>  =  <movement> ;             |" + nl
+	see "                       |            |                    |" + nl
+        see "                       "+ keyParts[2] + "            |                    |" + nl
+	see "                                   "+ actionParts[2] +"                  |" + nl 
+	see "                                                       <key>" + nl 
+	see "                                                    _____|____"  + nl
+        see "                                                   /          \" + nl 
+        see "                                             key <key>  =  <movement> ;" + nl
+        see "                                                  |            |" + nl    
+        see "                                                  " + keyParts[3] + "            |" + nl  
+	see "                                                             "+ actionParts[3] + nl 
+    ok
+    if keyCount = 4
+        see "                         <program>" + nl
+        see "                             |" + nl
+        see "                     wake <keys> sleep" + nl
+	see "                 ____________|____________" +nl
+        see "                /                         \" + nl
+        see "             <key>                      <keys>" + nl
+	see "           ____|_____                      |" +nl
+        see "          /          \                     |" + nl
+        see "   key <key>  =  <movement> ;              | " + nl
+        see "         |            |                    |" + nl
+        see "         " + keyParts[1] + "            |                    |" + nl                               
+        see "                    "+ actionParts[1] +"      ____________|____________" + nl
+        see "                              /                         \" + nl
+        see "                           <key>                      <keys>" + nl
+	see "                         ____|_____                      |"+nl
+        see "                        /          \                     |" + nl
+        see "                  key <key>  =  <movement> ;             |" + nl
+	see "                       |            |                    |" + nl
+        see "                       "+ keyParts[2] + "            |                    |" + nl
+	see "                                   "+ actionParts[2] +"                  |" + nl 
+	see "                                             ____________|____________" + nl 
+        see "                                            /                         \" + nl
+        see "                                          <key>                      <keys>" + nl
+	see "                                       _____|___                       |"  + nl
+        see "                                      /          \                     |" + nl 
+        see "                                key <key>  =  <movement> ;             |" + nl
+        see "                                     |            |                    |" + nl    
+        see "                                     " + keyParts[3] + "            |                    |" + nl  
+	see "                                                 "+ actionParts[3] +"                 |" + nl 
+        see "                                                                     <key>"   + nl                
+	see "                                                                  _____|____"  + nl                  
+        see "                                                                 /          \" + nl                   
+        see "                                                           key <key>  =  <movement> ;" + nl          
+        see "                                                                |            |" + nl        
+        see "                                                                " + keyParts[4] + "            |" + nl          
+ 	see "                                                                            "+ actionParts[4] + nl
+    ok	
+	
+    	see nl + "Parse Tree Printed successfully" + nl
+	see nl + "-----------------------------------------------------------" + nl
+    	see "Press any key to generate BASIC file or type 'END'/'end' to terminate: " give userInput
+    if userInput = "END" or userInput = "end"
+        see "Program terminated." + nl
+        return
+    else
+        writeToFile(tokens) # Creates the file
+        see nl + "Press any key to restart or type 'END'/'end' to terminate: " give userInput
+        if userInput = "END" or userInput = "end"
+            see "Program terminated." + nl
+            return
+        else
+            see nl + "-----------------------------------------------------------" + nl
+            see nl + "Restarting..." + nl
+            main() # Calls main to restart
+        ok
+    ok
 end
 
+# Writes/create a file, will overwrite on the second call
 func writeToFile(tokens)
     # Open file for writing
-    fp = fopen("iZEBot.bas", "w")
+    fp = fopen("iZEBot.bas", "w") # The 
     
-    # Write exact format with no extra newlines or spacing
+    # Write the code variable to the file following the format, adds necessary info by concatenation
     code = "'{$STAMP BS2p}" + nl
     code += "'{$PBASIC 2.5}" + nl
     code += "KEY VAR Byte" + nl
@@ -322,23 +432,12 @@ func writeToFile(tokens)
     # Verify file was written
     if fexists("iZEBot.bas")
         see nl + "-----------------------------------------------------------" + nl
-        see "File 'iZEBot.bas' has been created successfully!"
+        see "File 'iZEBot.bas' has been created successfully!" + nl
+	see "File path is: " + currentdir() + "/iZEBot.bas"
         see nl + "-----------------------------------------------------------" + nl
+	see code + nl
     else
         see "Error creating file"
-    ok
-end
-
-Func continueOrHalt()
-    see "Press any key to continue or type 'HALT'/'halt' to terminate: " give userInput
-
-    if userInput = "HALT" or userInput = "halt"
-        see "Program terminated." + nl
-        bye
-    else
-        see "Restarting the program..." + nl
-	see nl + "-----------------------------------------------------------" + nl
-        main()
     ok
 end
 
@@ -346,44 +445,55 @@ func main()
     see "This is the grammar" + nl + nl
     PrintGrammar()
 
-    see nl + "-----------------------------------------------------------" + nl
-    see "Please Enter a Sentence: " + nl give sentence
-    tokens = tokenize(sentence)
+    while true
+        see nl + "-----------------------------------------------------------" + nl
+        see "Please Enter a Sentence: " give sentence
+        
+        # Check if sentence is empty or only contains whitespace
+        if sentence = "" or trim(sentence) = ""
+            see nl + "Empty sentence. Please try again." + nl
+            loop
+        ok
+        
+        tokens = tokenize(sentence)
+        
+        see nl + "Derivation:" + nl + nl
+        result = leftmostDerivation(tokens)
+        derivation = result[1]
+        errors = result[2]
 
-    see "Derivation:" + nl
-    result = leftmostDerivation(tokens)
-    derivation = result[1]
-    errors = result[2]
-
-    # Print the derivation
-    for derstep in derivation
-        see derstep + nl
-    next
-
-    if len(errors) > 0
-        see nl + "Error:"
-        for i = 1 to len(errors)
-            see "- " + errors[i] + nl
+        # Print the derivation
+        for derstep in derivation
+            see derstep + nl
         next
-        continueOrHalt()
-    else
-        see nl + "Sentence was parsed successfully." + nl
-	see nl + "-----------------------------------------------------------" + nl 
-        see "Press any key to print the parse tree or type 'HALT'/'halt' to terminate: " give userInput
-        if userInput = "HALT" or userInput = "halt"
+
+        if len(errors) > 0
+            see nl + "Error:"
+            for i = 1 to len(errors)
+                see "- " + errors[i] + nl
+            next
             see "Program terminated." + nl
-            bye
+            return
         else
-            printParseTree(tokens)
-            see nl + "Press any key to restart or type 'HALT'/'halt' to terminate: " give userInput
-            if userInput = "HALT" or userInput = "halt"
+            see nl + "Sentence was parsed successfully." + nl
+            see nl + "-----------------------------------------------------------" + nl
+            see "Press any key to print the parse tree or type 'END'/'end' to terminate: " give userInput
+            if userInput = "END" or userInput = "end"
                 see "Program terminated." + nl
-                bye
+                return
             else
-	 	see nl + "-----------------------------------------------------------" + nl
-                see nl + "Restarting..." + nl
-                main()
+                printParseTree(tokens)
+                see nl + "Press any key to restart or type 'END'/'end' to terminate: " give userInput
+                if userInput = "END" or userInput = "end"
+                    see "Program terminated." + nl
+                    return
+                else
+                    see nl + "-----------------------------------------------------------" + nl
+                    see nl + "Restarting..." + nl
+                    main()
+                ok
             ok
         ok
-    ok
+        exit  # Exit the while loop if we get here
+    end
 end
