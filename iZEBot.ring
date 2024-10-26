@@ -347,17 +347,20 @@ func printParseTree(tokens)
         return
     else
         writeToFile(tokens) # Creates the file
-        see nl + "Press any key to restart or type 'END'/'end' to terminate: " give userInput
+        restartOrEnd()
+    ok
+end
+
+func restartOrEnd()
+	see nl + "Press any key to restart or type 'END'/'end' to terminate: " give userInput
         if userInput = "END" or userInput = "end"
             see "Program terminated." + nl
             return
         else
-            see nl + "-----------------------------------------------------------" + nl
+	    see nl + "-----------------------------------------------------------" + nl
             see nl + "Restarting..." + nl
             main() # Calls main to restart
         ok
-    ok
-end
 
 # Writes/create a file, will overwrite on the second call
 func writeToFile(tokens)
@@ -438,6 +441,7 @@ func writeToFile(tokens)
 	see code + nl
     else
         see "Error creating file"
+	restartOrEnd()
     ok
 end
 
@@ -472,15 +476,7 @@ func main()
             for i = 1 to len(errors)
                 see "- " + errors[i] + nl
             next
-            see nl + "Press any key to restart or type 'END'/'end' to terminate: " give userInput
-            if userInput = "END" or userInput = "end"
-                see "Program terminated." + nl
-                return
-                else
-                    see nl + "-----------------------------------------------------------" + nl
-                    see nl + "Restarting..." + nl + nl
-                    main()
-                ok
+            restartOrEnd()
             return
         else
             see nl + "Sentence was parsed successfully." + nl
@@ -491,15 +487,7 @@ func main()
                 return
             else
                 printParseTree(tokens)
-                see nl + "Press any key to restart or type 'END'/'end' to terminate: " give userInput
-                if userInput = "END" or userInput = "end"
-                    see "Program terminated." + nl
-                    return
-                else
-                    see nl + "-----------------------------------------------------------" + nl
-                    see nl + "Restarting..." + nl + nl
-                    main()
-                ok
+                restartOrEnd()
             ok
         ok
         exit  # Exit the while loop if we get here
