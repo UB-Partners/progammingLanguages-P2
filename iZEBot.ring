@@ -472,7 +472,15 @@ func main()
             for i = 1 to len(errors)
                 see "- " + errors[i] + nl
             next
-            see "Program terminated." + nl
+            see nl + "Press any key to restart or type 'END'/'end' to terminate: " give userInput
+            if userInput = "END" or userInput = "end"
+                see "Program terminated." + nl
+                return
+                else
+                    see nl + "-----------------------------------------------------------" + nl
+                    see nl + "Restarting..." + nl + nl
+                    main()
+                ok
             return
         else
             see nl + "Sentence was parsed successfully." + nl
@@ -489,7 +497,7 @@ func main()
                     return
                 else
                     see nl + "-----------------------------------------------------------" + nl
-                    see nl + "Restarting..." + nl
+                    see nl + "Restarting..." + nl + nl
                     main()
                 ok
             ok
