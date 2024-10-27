@@ -479,7 +479,7 @@ func writeToFile(tokens)
     if fexists("iZEBot.BSP")
         see nl + "-----------------------------------------------------------" + nl
         see "File 'iZEBot.BSP' has been created successfully!" + nl
-	see "File path is: " + currentdir() + "/iZEBot.bas"
+	see "File path is: " + currentdir() + "/iZEBot.BSP"
         see nl + "-----------------------------------------------------------" + nl
 	see code + nl
     else
