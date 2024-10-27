@@ -534,7 +534,7 @@ func main()
                 if userInput = "" or trim(sentence) = "" # Empty sentence check to proceed
         		writeToFile(tokens) # Creates the file
        			restartOrEnd()
-		elseif userInput = "" or trim(sentence) = "" # Empty sentence check to proceed
+		elseif userInput != "" or trim(sentence) != "" # Not empty sentence check to proceed
 			writeToFile(tokens) # Creates the file
        			restartOrEnd()
     		ok
