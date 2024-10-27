@@ -165,11 +165,13 @@ Func leftmostDerivation(tokens)
             currentStep = derivation[len(derivation)]
             
             if keyCount = 1
+		# One key
                 add(derivation, "-> wake key <letter> = <movement>; sleep")
                 add(derivation, "-> wake key " + tokens[currentKeyIndex + 1][:value] + " = <movement>; sleep")
                 add(derivation, "-> wake key " + tokens[currentKeyIndex + 1][:value] + " = " + tokens[currentKeyIndex + 3][:value] + "; sleep")
             else
                 if processedKeys = 1
+		    # First key
                     add(derivation, "-> wake key <letter> = <movement>; <keys> sleep")
                     add(derivation, "-> wake key " + tokens[currentKeyIndex + 1][:value] + " = <movement>; <keys> sleep")
                     add(derivation, "-> wake key " + tokens[currentKeyIndex + 1][:value] + " = " + tokens[currentKeyIndex + 3][:value] + "; <keys> sleep")
@@ -180,6 +182,7 @@ Func leftmostDerivation(tokens)
                         add(derivation, replaceLeftmost(derivation[len(derivation)], "<letter>", tokens[currentKeyIndex + 1][:value]))
                         add(derivation, replaceLeftmost(derivation[len(derivation)], "<movement>", tokens[currentKeyIndex + 3][:value]))
                     else
+			# Last key
                         add(derivation, replaceLeftmost(currentStep, "<keys>", "<key>"))
                         add(derivation, replaceLeftmost(derivation[len(derivation)], "<key>", "key <letter> = <movement>;"))
                         add(derivation, replaceLeftmost(derivation[len(derivation)], "<letter>", tokens[currentKeyIndex + 1][:value]))
