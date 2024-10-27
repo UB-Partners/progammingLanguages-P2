@@ -239,7 +239,8 @@ end
 # Parse tree the sentence
 func printParseTree(tokens)
     see "-----------------------------------------------------------" + nl
-    
+    see "PARSE TREE: " + nl + nl
+
     # Count number of keys
     keyCount = 0
     for token in tokens
