@@ -502,14 +502,19 @@ func main()
 
     while true
         see nl + "-----------------------------------------------------------" + nl
-        see "Please Enter a Sentence: " give sentence
+        see "Please Enter a Sentence or 'END'/'end' to terminate: " give sentence
         
         # Check if sentence is empty or only contains whitespace
         if sentence = "" or trim(sentence) = ""
             see nl + "Empty sentence. Please try again." + nl
             loop
         ok
-        
+
+        if sentence = "END" or sentence = "end"
+                see "Program terminated." + nl
+                return
+        ok
+
         tokens = tokenize(sentence)
         
         see nl + "Derivation:" + nl + nl
@@ -542,7 +547,7 @@ func main()
                 if userInput = "" or trim(sentence) = "" # Empty sentence check to proceed
         		writeToFile(tokens) # Creates the file
        			restartOrEnd()
-		elseif userInput != "" or trim(sentence) != "" # Not empty sentence check to proceed
+		elseif userInput != "" or trim(sentence) != "" # Not empty sentence
 			writeToFile(tokens) # Creates the file
        			restartOrEnd()
     		ok
