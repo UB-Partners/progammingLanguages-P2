@@ -226,10 +226,18 @@ func checkDuplicateKeys(tokens)
     errors = []
     for i = 1 to len(tokens)
         if tokens[i][:type] = "letter"
-            if find(keys, tokens[i][:value]) > 0
-                add(errors, "IMPORTANT!: Key '" + tokens[i][:value] + "' has been declared more than once.")
-            else
-                add(keys, tokens[i][:value])
+            currentLetter = tokens[i][:value]
+            # Check if either the uppercase or lowercase version exists
+            isDuplicate = false
+            for existingKey in keys
+                if lower(currentLetter) = lower(existingKey)
+                    add(errors, "IMPORTANT!: Key '" + currentLetter + "' has been declared more than once (case insensitive match with '" + existingKey + "').")
+                    isDuplicate = true
+                    exit
+                ok
+            next
+            if not isDuplicate
+                add(keys, currentLetter)
             ok
         ok
     next
