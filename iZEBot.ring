@@ -239,35 +239,39 @@ end
 # Parse tree the sentence
 func printParseTree(tokens)
     see nl + "-----------------------------------------------------------" + nl
-    see "PARSE TREE: " + nl + nl
     
-    # Check if a key was declared twice
-    duplicateErrors = checkDuplicateKeys(tokens)
-    if len(duplicateErrors) > 0
-        for error in duplicateErrors
-            see error + nl
-        next
-        see nl + "Would you like to continue viewing the parse tree? (Y/N): " give choice
-        while choice != "Y" and choice != "N"
-            see "Please enter Y or N: " give choice
-        end
-        if choice != "Y"
-            restartOrEnd()
-        ok
-    ok
-    
-    # Count number of key statements
+    # Count number of keys
     keyCount = 0
     for token in tokens
         if token[:value] = "key"
             keyCount++
         ok
     next
-    
-    # Check if number of keys goes over 4
+
+    # Check if there are more than 4 keys
     if keyCount > 4
         see "ERROR: More than 4 keys detected. Only single declarations of a, b, c, and d are allowed." + nl
-	restartOrEnd()
+        restartOrEnd()
+    ok
+
+    # Check for duplicates if 4 keys
+    if keyCount <= 4
+        duplicateErrors = checkDuplicateKeys(tokens)
+        if len(duplicateErrors) > 0
+            for error in duplicateErrors
+                see error + nl
+            next
+            see nl + "Would you like to continue viewing the parse tree? (Y/N): " give choice
+            while choice != "Y" and choice != "N"
+                see "Please enter Y or N: " give choice
+            end
+            if choice != "Y"
+                restartOrEnd()
+	    else
+   	        see nl + "-----------------------------------------------------------" + nl
+	        see "PARSE TREE: " + nl + nl
+            ok
+        ok
     ok
     
     # Get the key and action parts for each key statement
