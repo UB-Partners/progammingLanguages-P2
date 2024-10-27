@@ -245,8 +245,11 @@ func printParseTree(tokens)
             see error + nl
         next
         see nl + "Would you like to continue viewing the parse tree? (Y/N): " give choice
+        while choice != "Y" and choice != "N"
+            see "Please enter Y or N: " give choice
+        end
         if choice != "Y"
-            return
+            restartOrEnd()
         ok
     ok
     
@@ -260,16 +263,8 @@ func printParseTree(tokens)
     
     # Check if number of keys goes over 4
     if keyCount > 4
-        see "Error: More than 4 keys detected. Only single declarations of a, b, c, and d are allowed." + nl
-	see nl + "Press any key to restart or type 'END'/'end' to terminate: " give userInput
-            if userInput = "END" or userInput = "end"
-                see "Program terminated." + nl
-                return
-            else
-	 	see nl + "-----------------------------------------------------------" + nl
-                see nl + "Restarting..." + nl
-                main()
-            ok
+        see "ERROR: More than 4 keys detected. Only single declarations of a, b, c, and d are allowed." + nl
+	restartOrEnd()
     ok
     
     # Get the key and action parts for each key statement
@@ -520,9 +515,9 @@ func main()
         next
 
         if len(errors) > 0
-            see nl + "Error:"
+            see nl + "ERROR:"
             for i = 1 to len(errors)
-                see "- " + errors[i] + nl
+                see " " + errors[i] + nl
             next
             restartOrEnd()
             return
