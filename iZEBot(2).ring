@@ -4,7 +4,7 @@ func PrintGrammar() # Prints the grammar
     see "<program> -> 'wake' <keys> 'sleep' " + nl
     see "<keys> -> <key> | <key> <keys>" + nl
     see "<key> -> 'key' <letter> '=' <movement>; " + nl
-    see "<letter> -> 'a' | 'b' | 'c' | 'd' " + nl
+    see "<letter> -> 'a' | 'b' | 'c' | 'd' | 'A' | 'B' | 'C' | 'D' " + nl
     see "<movement> -> 'DRIVE' | 'BACK' | 'LEFT' | 'RIGHT' | 'SPINL' | 'SPINR' " + nl + nl
 end
 
@@ -30,13 +30,13 @@ Func tokenize(input)
 Func getTokenType(word)
     if word = "wake" or word = "sleep" or word = "key" or word = "=" or word = ";"
         return word
-    elseif word = "a" or word = "b" or word = "c" or word = "d"
+    elseif word = "a" or word = "b" or word = "c" or word = "d" or word = "A" or word = "B" or word = "C" or word = "D"
         return "letter"
     elseif word = "DRIVE" or word = "BACK" or word = "LEFT" or word = "RIGHT" or word = "SPINL" or word = "SPINR"
         return "movement"
     else
         # Check if it might be an invalid letter or movement
-        validLetters = ["a", "b", "c", "d"]
+        validLetters = ["a", "b", "c", "d", "A", "B", "C", "D"]
         validMovements = ["DRIVE", "BACK", "LEFT", "RIGHT", "SPINL", "SPINR"]
         
         if len(word) = 1 and isalpha(word)  # Looks like it was meant to be a letter
@@ -238,7 +238,7 @@ end
 
 # Parse tree the sentence
 func printParseTree(tokens)
-    see nl + "-----------------------------------------------------------" + nl
+    see "-----------------------------------------------------------" + nl
     
     # Count number of keys
     keyCount = 0
@@ -250,7 +250,7 @@ func printParseTree(tokens)
 
     # Check if there are more than 4 keys
     if keyCount > 4
-        see "ERROR: More than 4 keys detected. Only single declarations of a, b, c, and d are allowed." + nl
+        see "ERROR: More than 4 keys detected. Only single declarations of lower case or upper case a, b, c, and d are allowed." + nl
         restartOrEnd()
     ok
 
@@ -268,7 +268,7 @@ func printParseTree(tokens)
             if choice != "Y"
                 restartOrEnd()
 	    else
-   	        see nl + "-----------------------------------------------------------" + nl
+   	        see "-----------------------------------------------------------" + nl
 	        see "PARSE TREE: " + nl + nl
             ok
         ok
@@ -407,7 +407,7 @@ func restartOrEnd()
 # Writes/create a file, will overwrite on the second call
 func writeToFile(tokens)
     # Open file for writing
-    fp = fopen("iZEBot.bas", "w") # The 
+    fp = fopen("iZEBOT.BSP", "w") # Open file to write
     
     # Write the code variable to the file following the format, adds necessary info by concatenation
     code = "'{$STAMP BS2p}" + nl
@@ -522,19 +522,19 @@ func main()
             return
         else
             see nl + "Sentence was parsed successfully." + nl
-            see nl + "-----------------------------------------------------------" + nl
+            see "-----------------------------------------------------------" + nl
             see "Press any key to print the parse tree or type 'END'/'end' to terminate: " give userInput
             if userInput = "END" or userInput = "end"
                 see "Program terminated." + nl
                 return
             else
                 printParseTree(tokens)
-		see "Press any key to generate BASIC file or type 'END'/'end' to terminate: " give userInput
-        	if userInput = "END" or userInput = "end"
-           		see "Program terminated." + nl
-         	        return
-        	else
+		see "Press any key to generate BASIC file: " give userInput
+                if userInput = "" or trim(sentence) = "" # Empty sentence check to proceed
         		writeToFile(tokens) # Creates the file
+       			restartOrEnd()
+		elseif userInput = "" or trim(sentence) = "" # Empty sentence check to proceed
+			writeToFile(tokens) # Creates the file
        			restartOrEnd()
     		ok
             ok
