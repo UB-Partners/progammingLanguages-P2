@@ -391,14 +391,6 @@ func printParseTree(tokens)
 	
     	see nl + "Parse Tree Printed successfully" + nl
 	see nl + "-----------------------------------------------------------" + nl
-    	see "Press any key to generate BASIC file or type 'END'/'end' to terminate: " give userInput
-    if userInput = "END" or userInput = "end"
-        see "Program terminated." + nl
-        return
-    else
-        writeToFile(tokens) # Creates the file
-        restartOrEnd()
-    ok
 end
 
 func restartOrEnd()
@@ -537,7 +529,14 @@ func main()
                 return
             else
                 printParseTree(tokens)
-                restartOrEnd()
+		see "Press any key to generate BASIC file or type 'END'/'end' to terminate: " give userInput
+        	if userInput = "END" or userInput = "end"
+           		see "Program terminated." + nl
+         	        return
+        	else
+        		writeToFile(tokens) # Creates the file
+       			restartOrEnd()
+    		ok
             ok
         ok
         exit  # Exit the while loop if we get here
