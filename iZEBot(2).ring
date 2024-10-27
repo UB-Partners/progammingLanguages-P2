@@ -240,7 +240,7 @@ end
 func printParseTree(tokens)
     see "-----------------------------------------------------------" + nl
     see "PARSE TREE: " + nl + nl
-
+    
     # Count number of keys
     keyCount = 0
     for token in tokens
@@ -476,9 +476,9 @@ func writeToFile(tokens)
     fclose(fp)
 
     # Verify file was written
-    if fexists("iZEBot.bas")
+    if fexists("iZEBot.BSP")
         see nl + "-----------------------------------------------------------" + nl
-        see "File 'iZEBot.bas' has been created successfully!" + nl
+        see "File 'iZEBot.BSP' has been created successfully!" + nl
 	see "File path is: " + currentdir() + "/iZEBot.bas"
         see nl + "-----------------------------------------------------------" + nl
 	see code + nl
