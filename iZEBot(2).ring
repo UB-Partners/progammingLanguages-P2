@@ -37,21 +37,21 @@ Func getTokenType(word)
     else
         # Check if it might be an invalid letter or movement
         validLetters = ["a", "b", "c", "d"]
-        validMovements = ["DRIVE", "BACK", "LEFT", "RIGHT", "SPINL", "SPINR"]
         
-        if len(word) = 1 and isalpha(word)  # Looks like it was meant to be a letter
-            if find(validLetters, lower(word)) = 0
-                return "invalid_letter"
-            ok
+        # Check for any single alphabetic character first
+        if len(word) = 1 and isalpha(word)  # Will catch both uppercase and lowercase letters
+            return "invalid_letter"  # Any letter that's not a,b,c,d is invalid
         ok
         
+        # Check for invalid movements (all caps)
+        validMovements = ["DRIVE", "BACK", "LEFT", "RIGHT", "SPINL", "SPINR"]
         if upper(word) = word  # All caps - might be meant as a movement
             if find(validMovements, word) = 0
                 return "invalid_movement"
             ok
         ok
         
-        return "unknown"  # Completely unknown type
+        return "unknown"  # For non-letter, non-movement inputs
     ok
 
 # Performs the leftmost derivation.
@@ -116,10 +116,10 @@ Func leftmostDerivation(tokens)
             
             letterToken = tokens[currentKeyIndex + 1]
             if letterToken[:type] = "invalid_letter"
-                add(errors, "Invalid letter '" + letterToken[:value] + "' at position " + (currentKeyIndex + 1) + ". Valid letters are: a, b, c, d")
+                add(errors, "Invalid key '" + letterToken[:value] + "' at position " + (currentKeyIndex + 1) + ". Valid keys are: a, b, c, d")
                 return [derivation, errors]
             elseif letterToken[:type] != "letter"
-                add(errors, "Invalid word '" + letterToken[:value] + "' at position " + (currentKeyIndex + 1) + ". Expected a letter (a, b, c, or d)")
+                add(errors, "Invalid word '" + letterToken[:value] + "' at position " + (currentKeyIndex + 1) + ". Expected a key (a, b, c, or d)")
                 return [derivation, errors]
             ok
 
@@ -160,7 +160,7 @@ Func leftmostDerivation(tokens)
                 return [derivation, errors]
             ok
 
-            # Rest of the derivation steps remain the same...
+            # Derivation steps
             processedKeys++
             currentStep = derivation[len(derivation)]
             
