@@ -1,10 +1,10 @@
-load 'stdlib.ring'
+ load 'stdlib.ring'
 
 func PrintGrammar() # Prints the grammar
     see "<program> -> 'wake' <keys> 'sleep' " + nl
     see "<keys> -> <key> | <key> <keys>" + nl
     see "<key> -> 'key' <letter> '=' <movement>; " + nl
-    see "<letter> -> 'a' | 'b' | 'c' | 'd' | 'A' | 'B' | 'C' | 'D' " + nl
+    see "<letter> -> 'a' | 'b' | 'c' | 'd' " + nl
     see "<movement> -> 'DRIVE' | 'BACK' | 'LEFT' | 'RIGHT' | 'SPINL' | 'SPINR' " + nl + nl
 end
 
@@ -30,13 +30,13 @@ Func tokenize(input)
 Func getTokenType(word)
     if word = "wake" or word = "sleep" or word = "key" or word = "=" or word = ";"
         return word
-    elseif word = "a" or word = "b" or word = "c" or word = "d" or word = "A" or word = "B" or word = "C" or word = "D"
+    elseif word = "a" or word = "b" or word = "c" or word = "d"
         return "letter"
     elseif word = "DRIVE" or word = "BACK" or word = "LEFT" or word = "RIGHT" or word = "SPINL" or word = "SPINR"
         return "movement"
     else
         # Check if it might be an invalid letter or movement
-        validLetters = ["a", "b", "c", "d", "A", "B", "C", "D"]
+        validLetters = ["a", "b", "c", "d"]
         validMovements = ["DRIVE", "BACK", "LEFT", "RIGHT", "SPINL", "SPINR"]
         
         if len(word) = 1 and isalpha(word)  # Looks like it was meant to be a letter
@@ -226,18 +226,10 @@ func checkDuplicateKeys(tokens)
     errors = []
     for i = 1 to len(tokens)
         if tokens[i][:type] = "letter"
-            currentLetter = tokens[i][:value]
-            # Check if either the uppercase or lowercase version exists
-            isDuplicate = false
-            for existingKey in keys
-                if lower(currentLetter) = lower(existingKey)
-                    add(errors, "IMPORTANT!: Key '" + currentLetter + "' has been declared more than once (case insensitive match with '" + existingKey + "').")
-                    isDuplicate = true
-                    exit
-                ok
-            next
-            if not isDuplicate
-                add(keys, currentLetter)
+            if find(keys, tokens[i][:value]) > 0
+                add(errors, "IMPORTANT!: Key '" + tokens[i][:value] + "' has been declared more than once.")
+            else
+                add(keys, tokens[i][:value])
             ok
         ok
     next
@@ -379,7 +371,7 @@ func printParseTree(tokens)
         see "                  key <key>  =  <movement> ;             |" + nl
 	see "                       |            |                    |" + nl
         see "                       "+ keyParts[2] + "            |                    |" + nl
-	see "                                   "+ actionParts[2] +"                  |" + nl 
+	see "                                  "+ actionParts[2] +"                  |" + nl 
 	see "                                             ____________|____________" + nl 
         see "                                            /                         \" + nl
         see "                                          <key>                      <keys>" + nl
@@ -388,7 +380,7 @@ func printParseTree(tokens)
         see "                                key <key>  =  <movement> ;             |" + nl
         see "                                     |            |                    |" + nl    
         see "                                     " + keyParts[3] + "            |                    |" + nl  
-	see "                                                 "+ actionParts[3] +"                 |" + nl 
+	see "                                                "+ actionParts[3] +"                  |" + nl 
         see "                                                                     <key>"   + nl                
 	see "                                                                  _____|____"  + nl                  
         see "                                                                 /          \" + nl                   
@@ -450,8 +442,8 @@ func writeToFile(tokens)
             off
             
             # Generate IF statement matching exact format
-            code += "IF KEY =  '"+ upper(letter) +"' OR KEY = '"+ lower(letter)
-            code += "' THEN GOSUB " + routine + nl
+            code += 'IF KEY = "'+ lower(letter)
+            code += '" THEN GOSUB ' + routine + nl
         ok
         currentKeyIndex += 5
     end
