@@ -54,10 +54,31 @@ Func getTokenType(word)
         return "unknown"  # For non-letter, non-movement inputs
     ok
 
+func removeKeyAndWakeSleep(tokens)
+    keyCount = 0
+    filteredTokens = []
+    for token in tokens
+        if token[:value] != "key" and token[:value] != "wake" and token[:value] != "sleep"
+            add(filteredTokens, token[:value])
+        else
+            if token[:value] = "key"
+                keyCount++
+            ok
+        ok
+    next
+    return [filteredTokens, keyCount]
+end
+
 # Performs the leftmost derivation.
 Func leftmostDerivation(tokens)
     derivation = ["<program>"]
     errors = []
+    filteredTokens = removeKeyAndWakeSleep(tokens)
+    currentKeyIndex = 2  # Start after 'wake'
+    processedKeys = 0
+    processedTokens = 0
+    filteredLenght = len(filteredTokens[1])
+    keyLength = filteredTokens[2]
 
     # Check first and last tokens
     if tokens[1][:type] = "unknown"
@@ -97,16 +118,22 @@ Func leftmostDerivation(tokens)
     # Start the derivation
     add(derivation, "-> wake <keys> sleep")
     
-    if keyCount = 1
+    if keyCount = 1 
         add(derivation, "-> wake <key> sleep")
+        if filteredLenght < 4
+            add(errors, "Incomplete key statement at position " + (currentKeyIndex))
+            return [derivation, errors]
+        ok
     else
         add(derivation, "-> wake <key> <keys> sleep")
     ok
-
-    currentKeyIndex = 2  # Start after 'wake'
-    processedKeys = 0
-
+    
     while currentKeyIndex < len(tokens) - 1  # Stop before 'sleep'
+        if filteredLenght < 4
+            add(errors, "Incomplete key statement at position " + (currentKeyIndex))
+            return [derivation, errors]
+        ok
+
         if tokens[currentKeyIndex][:value] = "key"
             # Check letter
             if currentKeyIndex + 1 >= len(tokens)
@@ -165,13 +192,13 @@ Func leftmostDerivation(tokens)
             currentStep = derivation[len(derivation)]
             
             if keyCount = 1
-		# One key
+                # One key
                 add(derivation, "-> wake key <letter> = <movement>; sleep")
                 add(derivation, "-> wake key " + tokens[currentKeyIndex + 1][:value] + " = <movement>; sleep")
                 add(derivation, "-> wake key " + tokens[currentKeyIndex + 1][:value] + " = " + tokens[currentKeyIndex + 3][:value] + "; sleep")
             else
                 if processedKeys = 1
-		    # First key
+                    # First key
                     add(derivation, "-> wake key <letter> = <movement>; <keys> sleep")
                     add(derivation, "-> wake key " + tokens[currentKeyIndex + 1][:value] + " = <movement>; <keys> sleep")
                     add(derivation, "-> wake key " + tokens[currentKeyIndex + 1][:value] + " = " + tokens[currentKeyIndex + 3][:value] + "; <keys> sleep")
@@ -182,7 +209,7 @@ Func leftmostDerivation(tokens)
                         add(derivation, replaceLeftmost(derivation[len(derivation)], "<letter>", tokens[currentKeyIndex + 1][:value]))
                         add(derivation, replaceLeftmost(derivation[len(derivation)], "<movement>", tokens[currentKeyIndex + 3][:value]))
                     else
-			# Last key
+                        # Last key
                         add(derivation, replaceLeftmost(currentStep, "<keys>", "<key>"))
                         add(derivation, replaceLeftmost(derivation[len(derivation)], "<key>", "key <letter> = <movement>;"))
                         add(derivation, replaceLeftmost(derivation[len(derivation)], "<letter>", tokens[currentKeyIndex + 1][:value]))
@@ -191,7 +218,26 @@ Func leftmostDerivation(tokens)
                 ok
             ok
             
+            # Subtract 4 from filteredLenght after successful key expansion
+            filteredLenght = filteredLenght - 4
+	    keyLength = keyLength - 1
             currentKeyIndex += 5
+	 
+            # Check if there are more keys to process and if we have enough tokens
+            if keyLength != 0 and filteredLenght < 4
+    	    	# Find the last derivation step
+            	lastDerivation = derivation[len(derivation)]
+    
+            	# Replace <keys> with key in the last derivation step
+    		if substr(lastDerivation, "<keys>")
+        	newDerivation = replaceLeftmost(lastDerivation, "<keys>", "<key>")
+      		  # Remove the last derivation and add the modified one
+        	add(derivation, newDerivation)
+    ok
+    
+    add(errors, "Incomplete key statement at position " + (currentKeyIndex))
+    return [derivation, errors]
+ok
         else
             add(errors, "Expected 'key' keyword at position " + currentKeyIndex + ", got '" + tokens[currentKeyIndex][:value] + "' instead")
             return [derivation, errors]
